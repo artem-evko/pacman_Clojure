@@ -1,0 +1,53 @@
+body {
+  background-color: #000;
+  color: #fff;
+  font-family: sans-serif;
+  text-align: center;
+}
+
+#game-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* Сетка карты */
+#map {
+  display: grid;
+  grid-auto-rows: 20px;       /* высота клетки */
+  grid-auto-columns: 20px;    /* ширина клетки (для ровного квадрата) */
+}
+
+/* Базовая клетка */
+.cell {
+  width: 20px;
+  height: 20px;
+}
+
+/* Стены */
+.cell.wall {
+  background-color: #0011aa;
+}
+
+/* Пустая клетка */
+.cell.empty {
+  background-color: #000;
+}
+
+/* Точки */
+.cell.dot {
+  background-color: #000;
+  position: relative;
+}
+
+.cell.dot::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  background-color: #ffcc00;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
