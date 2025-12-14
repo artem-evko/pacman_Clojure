@@ -1,5 +1,3 @@
-// Большой лабиринт (49 x 23): # стены, . точки, пробел = пусто, P = старт
-// Важно: все строки одинаковой длины.
 
 const MAP = [
   "#################################################",
@@ -27,9 +25,10 @@ const MAP = [
   "#################################################"
 ];
 
-const CELL_SIZE = 22; // хочешь больше — поставь 26 или 30
+const CELL_SIZE = 22; 
 
 let player = { x: 1, y: 1 };
+
 
 function findPacmanStart() {
   for (let y = 0; y < MAP.length; y++) {
@@ -46,15 +45,12 @@ function createMap() {
   const rows = MAP.length;
   const cols = MAP[0].length;
 
-  // Настройка grid
   mapEl.style.gridTemplateColumns = `repeat(${cols}, ${CELL_SIZE}px)`;
   mapEl.style.gridAutoRows = `${CELL_SIZE}px`;
 
-  // Размер арены = размер карты
   arenaEl.style.width = `${cols * CELL_SIZE}px`;
   arenaEl.style.height = `${rows * CELL_SIZE}px`;
 
-  // Стартовая позиция
   const start = findPacmanStart();
   player.x = start.x;
   player.y = start.y;
@@ -140,8 +136,82 @@ function handleKeydown(e) {
   }
 }
 
+let ws = null;
+
+function logWs(line) {
+  const logEl = document.getElementById("ws-log");
+  if (!logEl) return;
+  const t = new Date().toLocaleTimeString();
+  const div = document.createElement("div");
+  div.textContent = `[${t}] ${line}`;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function setWsStatus(text) {
+  const el = document.getElementById("ws-status");
+  if (el) el.textContent = text;
+}
+
+function connectWs() {
+  const proto = window.location.protocol === "https:" ? "wss" : "ws";
+  const url = `${proto}://${window.location.host}/ws`;
+
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    setWsStatus("WS: connected");
+    logWs("connected");
+  };
+
+  ws.onclose = () => {
+    setWsStatus("WS: closed");
+    logWs("closed");
+  };
+
+  ws.onerror = () => {
+    setWsStatus("WS: error");
+    logWs("error");
+  };
+
+  ws.onmessage = (ev) => {
+    logWs("recv: " + ev.data);
+  };
+}
+
+function wsSend(obj) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    logWs("send failed: ws not open");
+    return;
+  }
+  const s = JSON.stringify(obj);
+  ws.send(s);
+  logWs("send: " + s);
+}
+
+function setupWsUi() {
+  const joinBtn = document.getElementById("join-btn");
+  const pingBtn = document.getElementById("ping-btn");
+
+  if (joinBtn) {
+    joinBtn.onclick = () => {
+      const nick = document.getElementById("nickname")?.value || "Anon";
+      wsSend({ type: "join", payload: { nickname: nick } });
+    };
+  }
+
+  if (pingBtn) {
+    pingBtn.onclick = () => {
+      wsSend({ type: "ping", payload: {} });
+    };
+  }
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   createMap();
   createPacmanElement();
   window.addEventListener("keydown", handleKeydown);
+
+  setupWsUi();
+  connectWs();
 });
