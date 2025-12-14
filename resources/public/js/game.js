@@ -281,7 +281,8 @@ function handleKeydown(e) {
   }
 
   if (!you || you.role === "spectator") return;
-  if (serverState && serverState.status === "over") return; // не двигаемся после окончания
+  if (!serverState) return;
+  if (serverState.status !== "running") return; // waiting/over -> не управляем
 
   wsSend({ type: "dir", payload: { dir } });
 }
