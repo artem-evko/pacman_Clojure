@@ -2,17 +2,29 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8" />
-    <title>Pacman 3-player — Этап 2</title>
+    <title>Pacman 3-player — Этап 3</title>
     <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
 <h1>Pacman 3-player</h1>
-<p>Этап 2: большой лабиринт + локальное движение.</p>
+<p>Этап 3: WebSocket подключение (карта и локальное движение остаются).</p>
+
+<div class="panel">
+    <input id="nickname" placeholder="Никнейм" />
+    <button id="join-btn">Join</button>
+    <button id="ping-btn">Ping</button>
+    <span id="ws-status">WS: connecting...</span>
+</div>
 
 <div id="game-container">
     <div id="arena">
         <div id="map"></div>
     </div>
+</div>
+
+<div class="log-wrap">
+    <h3>Лог WebSocket</h3>
+    <div id="ws-log" class="log"></div>
 </div>
 
 <p class="hint">Управление: WASD или стрелки</p>

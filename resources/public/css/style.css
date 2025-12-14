@@ -16,17 +16,52 @@ p {
   margin: 8px 0;
 }
 
+/* Панель сверху */
+.panel {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.panel input {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #111;
+  color: #fff;
+}
+
+.panel button {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #1a1a1a;
+  color: #fff;
+  cursor: pointer;
+}
+
+.panel button:hover {
+  background: #222;
+}
+
+#ws-status {
+  opacity: 0.85;
+  font-size: 14px;
+}
+
 #game-container {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 14px;
 }
 
 /* Арена ровно под размер карты */
 #arena {
   position: relative;
   display: inline-block;
-  /* лёгкая рамка чтобы было видно границы */
   box-shadow: 0 0 0 2px rgba(255,255,255,0.15);
 }
 
@@ -75,6 +110,32 @@ p {
   background-color: #ffcc00;
   left: 0;
   top: 0;
+}
+
+/* Лог WS */
+.log-wrap {
+  max-width: 900px;
+  margin: 14px auto 0;
+  padding: 0 12px;
+}
+
+.log-wrap h3 {
+  margin: 10px 0 8px;
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+.log {
+  height: 140px;
+  overflow: auto;
+  text-align: left;
+  background: #0b0b0b;
+  border: 1px solid #222;
+  border-radius: 10px;
+  padding: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .hint {
