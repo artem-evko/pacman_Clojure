@@ -1,4 +1,4 @@
-// ======= Этап 6: dots + score + win/lose + restart =======
+// ======= Client: WS + render from server state + Add bot =======
 
 const MAP = [
   "#################################################",
@@ -29,9 +29,9 @@ const MAP = [
 const CELL_SIZE = 22;
 
 let ws = null;
-let you = null;
-let serverState = null;
-let playerSprites = {}; // id -> element
+let you = null;           // {id,nickname,role,...}
+let serverState = null;   // payload state
+let playerSprites = {};   // id -> element
 
 function $(id) { return document.getElementById(id); }
 
@@ -49,8 +49,6 @@ function setWsStatus(text) {
   const el = $("ws-status");
   if (el) el.textContent = text;
 }
-
-function isWallChar(ch) { return ch === "#"; }
 
 function createMapBase() {
   const mapEl = $("map");
@@ -75,7 +73,7 @@ function createMapBase() {
       cell.style.width = `${CELL_SIZE}px`;
       cell.style.height = `${CELL_SIZE}px`;
 
-      if (isWallChar(ch)) cell.classList.add("wall");
+      if (ch === "#") cell.classList.add("wall");
       else cell.classList.add("empty");
 
       mapEl.appendChild(cell);
@@ -83,7 +81,6 @@ function createMapBase() {
   }
 }
 
-// Рендер точки из serverState.dots
 function renderDots() {
   if (!serverState) return;
   const mapEl = $("map");
@@ -92,7 +89,6 @@ function renderDots() {
   const cols = MAP[0].length;
   const children = mapEl.children;
 
-  // Сначала очистим все точки (без пересоздания DOM)
   for (let i = 0; i < children.length; i++) {
     children[i].classList.remove("dot");
   }
@@ -101,36 +97,11 @@ function renderDots() {
   for (const [x, y] of dots) {
     const idx = y * cols + x;
     if (idx >= 0 && idx < children.length) {
-      // не рисуем точку на стене (на всякий)
       if (!children[idx].classList.contains("wall")) {
         children[idx].classList.add("dot");
       }
     }
   }
-}
-
-function renderPlayersList() {
-  const list = $("players-list");
-  if (!list || !serverState) return;
-
-  const players = serverState.players || {};
-  const items = Object.values(players);
-
-  list.innerHTML = "";
-  if (items.length === 0) {
-    list.textContent = "Пока никого нет";
-    return;
-  }
-
-  items
-    .sort((a, b) => (a.role || "").localeCompare(b.role || ""))
-    .forEach(p => {
-      const score = (p.score !== undefined) ? ` | score: ${p.score}` : "";
-      const div = document.createElement("div");
-      div.className = "player-item";
-      div.innerHTML = `<div><b>${p.nickname}</b>${score}</div><div class="role">${p.role}</div>`;
-      list.appendChild(div);
-    });
 }
 
 function renderYou() {
@@ -149,6 +120,32 @@ function renderWinner() {
   const el = $("winner");
   if (!el) return;
   el.textContent = serverState && serverState.winner ? serverState.winner : "—";
+}
+
+function renderPlayersList() {
+  const list = $("players-list");
+  if (!list || !serverState) return;
+
+  const players = serverState.players || {};
+  const items = Object.values(players);
+
+  list.innerHTML = "";
+  if (items.length === 0) {
+    list.textContent = "Пока никого нет";
+    return;
+  }
+
+
+  items
+    .sort((a, b) => (a.role || "").localeCompare(b.role || ""))
+    .forEach(p => {
+      const isBot = p.isBot ? " (bot)" : "";
+      const score = (p.score !== undefined) ? ` | score: ${p.score}` : "";
+      const div = document.createElement("div");
+      div.className = "player-item";
+      div.innerHTML = `<div><b>${p.nickname}${isBot}</b>${score}</div><div class="role">${p.role}</div>`;
+      list.appendChild(div);
+    });
 }
 
 function ensureSprite(id, role) {
@@ -242,16 +239,13 @@ function setupWsUi() {
     wsSend({ type: "join", payload: { nickname: nick } });
   };
 
-  $("ping-btn").onclick = () => {
-    wsSend({ type: "ping", payload: {} });
-  };
+  $("ping-btn").onclick = () => wsSend({ type: "ping", payload: {} });
 
   const restartBtn = $("restart-btn");
-  if (restartBtn) {
-    restartBtn.onclick = () => {
-      wsSend({ type: "restart", payload: {} });
-    };
-  }
+  if (restartBtn) restartBtn.onclick = () => wsSend({ type: "restart", payload: {} });
+
+  const botBtn = $("bot-btn");
+  if (botBtn) botBtn.onclick = () => wsSend({ type: "add-bot", payload: {} });
 }
 
 function keyToDir(e) {
@@ -282,7 +276,7 @@ function handleKeydown(e) {
 
   if (!you || you.role === "spectator") return;
   if (!serverState) return;
-  if (serverState.status !== "running") return; // waiting/over -> не управляем
+  if (serverState.status !== "running") return;
 
   wsSend({ type: "dir", payload: { dir } });
 }
