@@ -14,6 +14,8 @@
   (-> state
       (update :status name)
       (update :winner #(when % (name %)))
+      ;; dots: set -> vector (для JSON)
+      (update :dots (fn [d] (vec d)))
       (update :players
               (fn [m]
                 (into {}
@@ -35,11 +37,11 @@
       (case (:type msg)
         "join"
         (let [nickname (get-in msg [:payload :nickname] "Anon")
-              {:keys [player state]} (gs/join! {:nickname nickname})]
+              {:keys [player state]} (gs/join! {:nickname nickname})
+              you (-> player (update :role name) (update :dir #(when % (name %))))
+              st (public-state state)]
           (swap! channel->player assoc ch (:id player))
-          (send! ch {:type "joined"
-                     :payload {:you (-> player (update :role name) (update :dir #(when % (name %))))
-                               :state (public-state state)}})
+          (send! ch {:type "joined" :payload {:you you :state st}})
           (broadcast-state! state))
 
         "dir"
@@ -52,6 +54,10 @@
 
         "restart"
         (let [state (gs/restart!)]
+          (broadcast-state! state))
+
+        "add-bot"
+        (let [state (gs/add-bot!)]
           (broadcast-state! state))
 
         "ping"

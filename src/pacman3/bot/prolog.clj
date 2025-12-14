@@ -11,13 +11,23 @@
   [{:keys [ghost-pos pacman-pos legal-dirs]}]
   (let [[xg yg] ghost-pos
         [xp yp] pacman-pos
-        input (format "state(ghost(%d,%d), pacman(%d,%d), moves([%s]))."
+        input (format "state(ghost(%d,%d), pacman(%d,%d), moves([%s])).\n"
                       xg yg xp yp (str/join "," (map name legal-dirs)))
-        {:keys [out err]} (sh/sh "swipl" "-q" "-s" "prolog/ghost_ai.pl" :in input)]
-    (when-not (seq err)
+        {:keys [out err exit]}
+        ;; Явно вызываем main/0, завершаем через halt
+        (sh/sh "swipl" "-q" "-g" "main" "-t" "halt" "-s" "prolog/ghost_ai.pl" :in input)
+        err (str/trim (or err ""))]
+    (if (or (seq err) (not (zero? exit)))
+      (do (println "[prolog bot] swipl error:" err "exit" exit)
+          nil)
       (case (str/trim out)
         "move(up)." :up
         "move(down)." :down
         "move(left)." :left
         "move(right)." :right
-        nil))))
+        "move(up)" :up
+        "move(down)" :down
+        "move(left)" :left
+        "move(right)" :right
+        (do (println "[prolog bot] unexpected out:" (str/trim out))
+            nil))))) 

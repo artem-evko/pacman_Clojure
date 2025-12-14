@@ -1,15 +1,14 @@
 % prolog/ghost_ai.pl
-% Вход (читаем из stdin):
-% state(ghost(Xg,Yg), pacman(Xp,Yp), moves([up,down,left,right])).
+% Вход (stdin):
+%   state(ghost(Xg,Yg), pacman(Xp,Yp), moves([up,down,left,right])).
 % Выход (stdout):
-% move(left).
-
-:- initialization(main).
+%   move(left).
 
 main :-
     read(State),
     decide(State, Move),
-    write(Move), nl,
+    write(Move),
+    write('.'), nl,
     halt.
 
 decide(state(ghost(Xg,Yg), pacman(Xp,Yp), moves(Moves)), move(Best)) :-
