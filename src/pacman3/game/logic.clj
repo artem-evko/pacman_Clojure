@@ -1,6 +1,7 @@
 (ns pacman3.game.logic
     (:require
-      [pacman3.game.level :as level]))
+      [pacman3.game.level :as level]
+      [pacman3.game.state :as st]))
 
 (def dir->delta
   {:up [0 -1]
@@ -17,7 +18,7 @@
             (if (level/wall? next) pos next)))
 
 (defn- active-player? [p]
-       (and p (not= :spectator (:role p)) (:pos p)))
+       (and p (contains? (set st/active-roles) (:role p)) (:pos p)))
 
 (defn- pacman-id+pos [players]
        (some (fn [[id p]] (when (= :pacman (:role p)) [id (:pos p)])) players))
@@ -36,8 +37,7 @@
 
         :else
         (let [players (:players gs)
-
-              ;; 1) двигаем всех активных игроков
+              ;; 1) двигаем активных
               players' (into {}
                              (map (fn [[id p]]
                                       (if (active-player? p)
@@ -45,22 +45,19 @@
                                              [id (assoc p :pos pos')])
                                         [id p])))
                              players)
-
-              ;; 2) столкновение ghosts с pacman
+              ;; 2) столкновение
               [pac-id pac-pos] (pacman-id+pos players')
               gposes (ghost-poses players')
               caught? (and pac-pos (contains? gposes pac-pos))
 
-              ;; 3) сбор точек только pacman'ом
+              ;; 3) сбор точек
               dots (:dots gs)
               ate-dot? (and pac-pos (contains? dots pac-pos))
               dots' (if ate-dot? (disj dots pac-pos) dots)
-
               players'' (if (and pac-id ate-dot?)
                           (update-in players' [pac-id :score] (fnil inc 0))
                           players')
 
-              ;; 4) победа pacman, если dots закончились
               pac-wins? (empty? dots')]
 
              (cond
