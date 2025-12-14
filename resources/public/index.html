@@ -2,12 +2,12 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8" />
-    <title>Pacman 3-player — Этап 3</title>
+    <title>Pacman 3-player — Этап 4</title>
     <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
 <h1>Pacman 3-player</h1>
-<p>Этап 3: WebSocket подключение (карта и локальное движение остаются).</p>
+<p>Этап 4: STM (ref + dosync) — игроки хранятся на сервере.</p>
 
 <div class="panel">
     <input id="nickname" placeholder="Никнейм" />
@@ -16,9 +16,19 @@
     <span id="ws-status">WS: connecting...</span>
 </div>
 
+<div class="info">
+    <div><b>Ты:</b> <span id="you-info">—</span></div>
+    <div><b>Статус игры:</b> <span id="game-status">—</span></div>
+</div>
+
 <div id="game-container">
     <div id="arena">
         <div id="map"></div>
+    </div>
+
+    <div class="side">
+        <h3>Игроки</h3>
+        <div id="players-list" class="players"></div>
     </div>
 </div>
 
@@ -27,7 +37,7 @@
     <div id="ws-log" class="log"></div>
 </div>
 
-<p class="hint">Управление: WASD или стрелки</p>
+<p class="hint">Управление (локально пока): WASD или стрелки</p>
 
 <script src="/js/game.js"></script>
 </body>
