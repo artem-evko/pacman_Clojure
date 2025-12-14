@@ -19,6 +19,19 @@
            ;; 404
            (route/not-found "Not found"))
 
+(defn no-cache
+  "Выставляем заголовки, чтобы браузер не кэшировал статические файлы.
+   Иначе правки в resources/public могут не подтягиваться после обновления."
+  [handler]
+  (fn [req]
+    (when-let [resp (handler req)]
+      (-> resp
+          (assoc-in [:headers "Cache-Control"] "no-cache, no-store, must-revalidate")
+          (assoc-in [:headers "Pragma"] "no-cache")
+          (assoc-in [:headers "Expires"] "0")))))
+
 ;; Обёртка middleware (cookies, заголовки и т.д.)
 (def app
-  (wrap-defaults routes site-defaults))
+  (-> routes
+      (wrap-defaults site-defaults)
+      no-cache))
