@@ -3,7 +3,7 @@
     [org.httpkit.server :as http]
     [cheshire.core :as json]))
 
-;; Пока: список подключений (позже можно перейти на STM где нужно)
+;; Пока оставляем атом для списка сокетов (STM подключим на следующем этапе)
 (defonce clients (atom #{}))
 
 (defn- send! [ch msg]
@@ -29,6 +29,7 @@
         (send! ch {:type "pong"
                    :payload {:t (System/currentTimeMillis)}})
 
+        ;; default
         (send! ch {:type "error"
                    :payload {:msg "Unknown message type"}})))
     (catch Exception e
@@ -37,11 +38,15 @@
 
 (defn handler [req]
   (http/with-channel req ch
+    ;; register
     (swap! clients conj ch)
 
+    ;; hello
     (send! ch {:type "system" :payload {:msg "Соединение установлено"}})
 
+    ;; receive
     (http/on-receive ch (fn [data] (on-message! ch data)))
 
-    (http/on-close ch (fn [_]
-                        (swap! clients disj ch))))))
+    ;; close
+    (http/on-close ch (fn [_status]
+                        (swap! clients disj ch)))))
