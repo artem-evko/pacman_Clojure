@@ -16,28 +16,69 @@
              next (add-pos pos delta)]
             (if (level/wall? next) pos next)))
 
+(defn- active-player? [p]
+       (and p (not= :spectator (:role p)) (:pos p)))
+
+(defn- pacman-id+pos [players]
+       (some (fn [[id p]] (when (= :pacman (:role p)) [id (:pos p)])) players))
+
+(defn- ghost-poses [players]
+       (->> players
+            vals
+            (filter #(or (= :ghost1 (:role %)) (= :ghost2 (:role %))))
+            (map :pos)
+            (remove nil?)
+            set))
+
 (defn step-game [gs]
-      (if (not= :running (:status gs))
-        gs
+      (cond
+        (not= :running (:status gs)) gs
+
+        :else
         (let [players (:players gs)
-              ;; двигаем только активных
+
+              ;; 1) двигаем всех активных игроков
               players' (into {}
                              (map (fn [[id p]]
-                                      (if (or (= :spectator (:role p)) (nil? (:pos p)))
-                                        [id p]
+                                      (if (active-player? p)
                                         (let [pos' (move-one (:pos p) (:dir p))]
-                                             [id (assoc p :pos pos')]))))
+                                             [id (assoc p :pos pos')])
+                                        [id p])))
                              players)
-              pacman-pos (some (fn [[_ p]] (when (= :pacman (:role p)) (:pos p))) players')
-              ghost-poses (->> players'
-                               vals
-                               (filter #(or (= :ghost1 (:role %)) (= :ghost2 (:role %))))
-                               (map :pos)
-                               (remove nil?)
-                               set)
-              caught? (and pacman-pos (contains? ghost-poses pacman-pos))]
-             (-> gs
-                 (assoc :players players')
-                 (cond-> caught?
-                         (assoc :status :waiting
-                                :winner :ghosts))))))
+
+              ;; 2) столкновение ghosts с pacman
+              [pac-id pac-pos] (pacman-id+pos players')
+              gposes (ghost-poses players')
+              caught? (and pac-pos (contains? gposes pac-pos))
+
+              ;; 3) сбор точек только pacman'ом
+              dots (:dots gs)
+              ate-dot? (and pac-pos (contains? dots pac-pos))
+              dots' (if ate-dot? (disj dots pac-pos) dots)
+
+              players'' (if (and pac-id ate-dot?)
+                          (update-in players' [pac-id :score] (fnil inc 0))
+                          players')
+
+              ;; 4) победа pacman, если dots закончились
+              pac-wins? (empty? dots')]
+
+             (cond
+               caught?
+               (-> gs
+                   (assoc :players players')
+                   (assoc :dots dots)
+                   (assoc :status :over)
+                   (assoc :winner :ghosts))
+
+               pac-wins?
+               (-> gs
+                   (assoc :players players'')
+                   (assoc :dots dots')
+                   (assoc :status :over)
+                   (assoc :winner :pacman))
+
+               :else
+               (-> gs
+                   (assoc :players players'')
+                   (assoc :dots dots'))))))
