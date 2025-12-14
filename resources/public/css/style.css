@@ -182,3 +182,26 @@ p  { margin: 8px 0; }
   background: #4dd2ff;
   border-radius: 10px;
 }
+
+.sprite {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0.95;
+}
+
+.sprite.pacman {
+  background: #ffcc00;
+  border-radius: 50%;
+}
+
+.sprite.ghost1 {
+  background: #ff4d4d;
+  border-radius: 10px;
+}
+
+.sprite.ghost2 {
+  background: #4dd2ff;
+  border-radius: 10px;
+}
+

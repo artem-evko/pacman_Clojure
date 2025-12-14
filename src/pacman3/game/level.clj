@@ -1,6 +1,5 @@
 (ns pacman3.game.level)
 
-;; ВАЖНО: строки одинаковой длины
 (def level
   ["#################################################"
    "#.............#.............#.................#.#"
@@ -29,11 +28,25 @@
 (def rows (count level))
 (def cols (count (first level)))
 
+(def start-positions
+  {:pacman [27 19]
+   :ghost1 [2  1]
+   :ghost2 [46 1]})
+
 (defn wall? [[x y]]
       (or (neg? x) (neg? y) (>= x cols) (>= y rows)
           (= \# (get (nth level y) x))))
 
-(def start-positions
-  {:pacman [27 19]   ;; там где P на карте
-   :ghost1 [2  1]
-   :ghost2 [46 1]})
+(defn- all-empty-cells []
+       (for [y (range rows)
+             x (range cols)
+             :let [ch (get (nth level y) x)]
+             :when (not= ch \#)]
+            [x y]))
+
+(def dots
+  ;; все не-стены, кроме стартовых позиций (чтобы не съедать точку мгновенно)
+  (let [starts (set (vals start-positions))]
+       (->> (all-empty-cells)
+            (remove starts)
+            set)))
