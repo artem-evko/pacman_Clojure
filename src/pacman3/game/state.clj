@@ -5,10 +5,10 @@
   (:import (java.util UUID)))
 
 (defonce game-state
-  (ref {:players {}       ;; id -> {:id :nickname :role :pos [x y] :dir :left :score 0}
+  (ref {:players {}        ;; id -> {:id :nickname :role :pos [x y] :dir :left :score 0 :is-bot true?}
         :dots    level/dots
-        :status  :waiting  ;; :waiting | :running | :over
-        :winner  nil}))
+        :status  :waiting   ;; :waiting | :running | :over
+        :winner  nil}))     ;; :pacman | :ghosts | nil
 
 (def active-roles [:pacman :ghost1 :ghost2])
 
@@ -49,8 +49,8 @@
         active (active-count players)]
     (cond
       (< active 3) (assoc gs :status :waiting :winner nil)
+      ;; если добрали 3 активных и стояли в waiting -> старт нового раунда
       (and (= active 3) (= :waiting (:status gs)))
-      ;; если только что добрали 3-х, то стартуем новый раунд
       (-> gs
           (assoc :status :running :winner nil)
           (assoc :dots level/dots)
@@ -93,7 +93,6 @@
   (dosync
     (when (contains? #{:up :down :left :right} dir-keyword)
       (let [p (get-in @game-state [:players player-id])]
-        ;; направлением управляют только активные игроки
         (when (active-player? p)
           (alter game-state assoc-in [:players player-id :dir] dir-keyword))))
     @game-state))
@@ -120,5 +119,22 @@
                                       m))))]
           (ref-set game-state gs')
           gs')
-        ;; если не 3 активных — просто вернуть текущее
         gs))))
+
+(defn add-bot! []
+  (dosync
+    (let [gs @game-state
+          used (used-roles (:players gs))
+          role (cond
+                 (not (used :ghost1)) :ghost1
+                 (not (used :ghost2)) :ghost2
+                 :else nil)]
+      (if (nil? role)
+        gs
+        (let [id (str (UUID/randomUUID))
+              nickname (if (= role :ghost1) "Bot Ghost1" "Bot Ghost2")
+              p (assoc (init-active-player id nickname role) :is-bot true)
+              gs' (assoc-in gs [:players id] p)
+              gs'' (recompute-status gs')]
+          (ref-set game-state gs'')
+          gs'')))))
