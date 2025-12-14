@@ -7,14 +7,8 @@ body {
   padding: 0;
 }
 
-h1 {
-  margin-top: 24px;
-  margin-bottom: 8px;
-}
-
-p {
-  margin: 8px 0;
-}
+h1 { margin-top: 24px; margin-bottom: 8px; }
+p  { margin: 8px 0; }
 
 /* Панель сверху */
 .panel {
@@ -43,22 +37,29 @@ p {
   cursor: pointer;
 }
 
-.panel button:hover {
-  background: #222;
+.panel button:hover { background: #222; }
+
+#ws-status { opacity: 0.85; font-size: 14px; }
+
+.info {
+  margin-top: 10px;
+  opacity: 0.9;
+  display: grid;
+  gap: 6px;
+  justify-content: center;
 }
 
-#ws-status {
-  opacity: 0.85;
-  font-size: 14px;
-}
-
+/* контейнер игры: карта + боковая панель */
 #game-container {
   display: flex;
   justify-content: center;
+  align-items: flex-start;
+  gap: 18px;
   margin-top: 14px;
+  padding: 0 12px;
 }
 
-/* Арена ровно под размер карты */
+/* Арена */
 #arena {
   position: relative;
   display: inline-block;
@@ -66,26 +67,12 @@ p {
 }
 
 /* Сетка карты */
-#map {
-  display: grid;
-}
+#map { display: grid; }
 
-/* Базовая клетка */
-.cell {
-  box-sizing: border-box;
-}
+.cell { box-sizing: border-box; }
+.cell.wall { background-color: #0011aa; }
+.cell.empty { background-color: #000; }
 
-/* Стены */
-.cell.wall {
-  background-color: #0011aa;
-}
-
-/* Пустая клетка */
-.cell.empty {
-  background-color: #000;
-}
-
-/* Точки */
 .cell.dot {
   background-color: #000;
   position: relative;
@@ -103,7 +90,7 @@ p {
   transform: translate(-50%, -50%);
 }
 
-/* Pacman */
+/* Pacman (локальный) */
 #pacman {
   position: absolute;
   border-radius: 50%;
@@ -112,9 +99,43 @@ p {
   top: 0;
 }
 
-/* Лог WS */
+/* боковая панель */
+.side {
+  width: 260px;
+  text-align: left;
+  background: #0b0b0b;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.side h3 {
+  margin: 6px 0 10px;
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+.players {
+  display: grid;
+  gap: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+}
+
+.player-item {
+  padding: 6px 8px;
+  border: 1px solid #222;
+  border-radius: 10px;
+  background: #101010;
+}
+
+.player-item .role {
+  opacity: 0.8;
+}
+
+/* лог WS */
 .log-wrap {
-  max-width: 900px;
+  max-width: 980px;
   margin: 14px auto 0;
   padding: 0 12px;
 }
@@ -138,7 +159,4 @@ p {
   line-height: 1.4;
 }
 
-.hint {
-  opacity: 0.8;
-  margin-top: 14px;
-}
+.hint { opacity: 0.8; margin-top: 14px; }
