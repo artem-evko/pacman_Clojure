@@ -1,4 +1,4 @@
-// ======= Этап 5: серверный тик + позиции приходят с сервера =======
+// ======= Этап 6: dots + score + win/lose + restart =======
 
 const MAP = [
   "#################################################",
@@ -29,9 +29,9 @@ const MAP = [
 const CELL_SIZE = 22;
 
 let ws = null;
-let you = null;           // {id, nickname, role}
-let serverState = null;   // state payload
-let playerSprites = {};   // id -> element
+let you = null;
+let serverState = null;
+let playerSprites = {}; // id -> element
 
 function $(id) { return document.getElementById(id); }
 
@@ -50,7 +50,9 @@ function setWsStatus(text) {
   if (el) el.textContent = text;
 }
 
-function createMap() {
+function isWallChar(ch) { return ch === "#"; }
+
+function createMapBase() {
   const mapEl = $("map");
   const arenaEl = $("arena");
 
@@ -73,11 +75,36 @@ function createMap() {
       cell.style.width = `${CELL_SIZE}px`;
       cell.style.height = `${CELL_SIZE}px`;
 
-      if (ch === "#") cell.classList.add("wall");
-      else if (ch === ".") cell.classList.add("dot");
+      if (isWallChar(ch)) cell.classList.add("wall");
       else cell.classList.add("empty");
 
       mapEl.appendChild(cell);
+    }
+  }
+}
+
+// Рендер точки из serverState.dots
+function renderDots() {
+  if (!serverState) return;
+  const mapEl = $("map");
+  if (!mapEl) return;
+
+  const cols = MAP[0].length;
+  const children = mapEl.children;
+
+  // Сначала очистим все точки (без пересоздания DOM)
+  for (let i = 0; i < children.length; i++) {
+    children[i].classList.remove("dot");
+  }
+
+  const dots = serverState.dots || [];
+  for (const [x, y] of dots) {
+    const idx = y * cols + x;
+    if (idx >= 0 && idx < children.length) {
+      // не рисуем точку на стене (на всякий)
+      if (!children[idx].classList.contains("wall")) {
+        children[idx].classList.add("dot");
+      }
     }
   }
 }
@@ -98,9 +125,10 @@ function renderPlayersList() {
   items
     .sort((a, b) => (a.role || "").localeCompare(b.role || ""))
     .forEach(p => {
+      const score = (p.score !== undefined) ? ` | score: ${p.score}` : "";
       const div = document.createElement("div");
       div.className = "player-item";
-      div.innerHTML = `<div><b>${p.nickname}</b></div><div class="role">${p.role}</div>`;
+      div.innerHTML = `<div><b>${p.nickname}</b>${score}</div><div class="role">${p.role}</div>`;
       list.appendChild(div);
     });
 }
@@ -117,16 +145,23 @@ function renderStatus() {
   el.textContent = serverState ? serverState.status : "—";
 }
 
-function ensureSprite(id, role) {
-  if (playerSprites[id]) return playerSprites[id];
+function renderWinner() {
+  const el = $("winner");
+  if (!el) return;
+  el.textContent = serverState && serverState.winner ? serverState.winner : "—";
+}
 
+function ensureSprite(id, role) {
+  if (playerSprites[id]) {
+    playerSprites[id].className = "sprite " + role;
+    return playerSprites[id];
+  }
   const arena = $("arena");
   const el = document.createElement("div");
-  el.className = "sprite " + role; // sprite pacman/ghost1/ghost2/spectator
+  el.className = "sprite " + role;
   el.style.width = `${CELL_SIZE}px`;
   el.style.height = `${CELL_SIZE}px`;
   arena.appendChild(el);
-
   playerSprites[id] = el;
   return el;
 }
@@ -148,7 +183,7 @@ function renderWorld() {
 
   const players = serverState.players || {};
   for (const [id, p] of Object.entries(players)) {
-    if (!p.pos) continue; // spectators without position
+    if (!p.pos) continue;
     const role = p.role || "spectator";
     const el = ensureSprite(id, role);
     const [x, y] = p.pos;
@@ -165,20 +200,18 @@ function handleServerMessage(raw) {
   if (msg.type === "joined") {
     you = msg.payload.you;
     serverState = msg.payload.state;
-    renderYou();
-    renderStatus();
-    renderPlayersList();
-    renderWorld();
+  } else if (msg.type === "state") {
+    serverState = msg.payload;
+  } else {
     return;
   }
 
-  if (msg.type === "state") {
-    serverState = msg.payload;
-    renderStatus();
-    renderPlayersList();
-    renderWorld();
-    return;
-  }
+  renderYou();
+  renderStatus();
+  renderWinner();
+  renderPlayersList();
+  renderDots();
+  renderWorld();
 }
 
 function connectWs() {
@@ -212,6 +245,13 @@ function setupWsUi() {
   $("ping-btn").onclick = () => {
     wsSend({ type: "ping", payload: {} });
   };
+
+  const restartBtn = $("restart-btn");
+  if (restartBtn) {
+    restartBtn.onclick = () => {
+      wsSend({ type: "restart", payload: {} });
+    };
+  }
 }
 
 function keyToDir(e) {
@@ -240,14 +280,14 @@ function handleKeydown(e) {
     e.preventDefault();
   }
 
-  // Шлём направление только если мы игрок (не spectator)
   if (!you || you.role === "spectator") return;
+  if (serverState && serverState.status === "over") return; // не двигаемся после окончания
 
   wsSend({ type: "dir", payload: { dir } });
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  createMap();
+  createMapBase();
   setupWsUi();
   connectWs();
   window.addEventListener("keydown", handleKeydown);

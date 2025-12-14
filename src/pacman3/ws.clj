@@ -50,6 +50,10 @@
             (let [state (gs/change-dir! pid dir-kw)]
               (broadcast-state! state))))
 
+        "restart"
+        (let [state (gs/restart!)]
+          (broadcast-state! state))
+
         "ping"
         (send! ch {:type "pong" :payload {:t (System/currentTimeMillis)}})
 
@@ -61,8 +65,6 @@
 (defn handler [req]
   (http/with-channel req ch
     (swap! clients conj ch)
-
-    ;; сразу снапшот
     (send! ch {:type "state" :payload (public-state (gs/snapshot))})
 
     (http/on-receive ch (fn [data] (on-message! ch data)))
